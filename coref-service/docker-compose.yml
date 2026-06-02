@@ -1,7 +1,8 @@
 services:
   coref-service:
-    build: .
-    image: bio-semantic-parser/coref-service:lingmess
+    # Pulls the prebuilt image (no local build needed): docker compose pull && docker compose up -d
+    image: ghcr.io/lnamty/coref-service:lingmess
+    build: .   # only used if you build locally with: docker compose build
     container_name: coref-service
     ports:
       - "5000:5000"

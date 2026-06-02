@@ -28,13 +28,23 @@ scientific text is a possible next step.
 
 ## Run
 
+A prebuilt image is published, so there is no need to build from source:
+
 ```bash
 cd coref-service
+docker compose pull         # pulls ghcr.io/lnamty/coref-service:lingmess
 docker compose up -d        # serves on http://localhost:5000
 ```
 
 The first start downloads the model weights into the `coref-models` volume. Later
 starts reuse them.
+
+To build the image locally instead of pulling it:
+
+```bash
+docker compose build
+docker compose up -d
+```
 
 ## API
 

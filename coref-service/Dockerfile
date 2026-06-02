@@ -14,6 +14,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
+# Slow mirrors can drop the connection mid-download; retry instead of failing the build.
+ENV PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=10
+
 COPY requirements.txt .
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install -r requirements.txt && \
