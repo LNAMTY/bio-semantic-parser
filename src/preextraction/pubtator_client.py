@@ -5,9 +5,11 @@ Fetches pre-annotated entities from the NIH/NLM PubTator3 API for a given
 PubMed ID. Returns typed, normalized entities (NCBI Gene IDs, MeSH IDs, etc.)
 that overlay and supplement the local scispaCy ensemble output.
 """
+import logging
 import requests
 from typing import List, Dict
 
+logger = logging.getLogger(__name__)
 
 _PUBTATOR3_URL = (
     "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/publications/export/biocjson"
@@ -23,7 +25,14 @@ def fetch_pubtator_entities(pmid: str, timeout: int = 15) -> List[Dict]:
         resp = requests.get(_PUBTATOR3_URL, params={"pmids": pmid}, timeout=timeout)
         resp.raise_for_status()
         data = resp.json()
-    except Exception:
+    except requests.exceptions.Timeout:
+        logger.warning("PubTator3 request timed out for PMID %s", pmid)
+        return []
+    except requests.exceptions.RequestException as e:
+        logger.warning("PubTator3 request failed for PMID %s: %s", pmid, e)
+        return []
+    except ValueError as e:
+        logger.warning("PubTator3 returned invalid JSON for PMID %s: %s", pmid, e)
         return []
 
     entities: List[Dict] = []
