@@ -323,3 +323,539 @@ class SectionLabel(str, Enum):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SECTION 4 — Full definitions (given to LLM in the extraction prompt)
+# Each entry: definition · example · not_this
+# ══════════════════════════════════════════════════════════════════════════════
+
+TAXONOMY: Dict[RelationType, dict] = {
+
+    # ── Category 1: Expression ────────────────────────────────────────────────
+
+    RelationType.EXPRESSED_IN: {
+        "definition": "Gene or protein A is detected at measurable levels in tissue, organ, or cell type B. Captures baseline expression patterns.",
+        "example": "FOXO3 is highly expressed in hippocampal neurons of long-lived centenarian subjects.",
+        "not_this": "Use LOCALIZES_TO if the focus is on subcellular compartment. Use UPREGULATES/DOWNREGULATES if an expression change is the finding, not baseline presence. Use TRANSCRIBES_TO if the transcription event itself is described.",
+    },
+    RelationType.TRANSCRIBES_TO: {
+        "definition": "Gene or DNA template A is transcribed by RNA polymerase to produce RNA product B (mRNA, miRNA, lncRNA, etc.).",
+        "example": "The SIRT1 gene transcribes to produce SIRT1 mRNA at elevated rates under caloric restriction.",
+        "not_this": "Use TRANSLATES_TO if the source is mRNA and the product is protein. Use EXPRESSED_IN if baseline tissue expression is the finding, not the transcription event.",
+    },
+    RelationType.TRANSLATES_TO: {
+        "definition": "mRNA A is translated by the ribosome to produce protein B.",
+        "example": "SIRT1 mRNA translates to SIRT1 protein, with translation efficiency increasing under nutrient deprivation.",
+        "not_this": "Use TRANSCRIBES_TO if the source is DNA and the product is RNA. Use EXPRESSED_IN if protein abundance in tissue is the finding, not the translation event.",
+    },
+
+    # ── Category 2: Activity Regulation ──────────────────────────────────────
+
+    RelationType.ACTIVATES: {
+        "definition": "A increases or triggers the activity, function, or signalling of B. Effect is on molecular activity, not transcript abundance.",
+        "example": "Caloric restriction activates AMPK in the hypothalamus of aged mice.",
+        "not_this": "Use UPREGULATES if the effect is on mRNA or protein abundance. Use PROMOTES if A facilitates a broader biological process rather than a single molecule.",
+    },
+    RelationType.INHIBITS: {
+        "definition": "A directly reduces or blocks the activity, function, or signalling of B. Effect is on molecular activity, not abundance.",
+        "example": "Rapamycin inhibits mTOR complex 1 activity by 40% in aged cells.",
+        "not_this": "Use DOWNREGULATES if the effect is on mRNA or protein abundance. Use PREVENTS if A stops a process or event from occurring.",
+    },
+    RelationType.UPREGULATES: {
+        "definition": "A increases the expression level of B — specifically mRNA abundance or protein abundance as measured by sequencing, qPCR, or proteomics.",
+        "example": "Fasting upregulates SIRT1 mRNA expression 2.5-fold in mouse liver.",
+        "not_this": "Use ACTIVATES if the effect is on protein activity rather than abundance. Use TRANSCRIBES_TO if the transcription event itself is described.",
+    },
+    RelationType.DOWNREGULATES: {
+        "definition": "A decreases the expression level of B — specifically mRNA or protein abundance.",
+        "example": "Ageing downregulates FOXO3 protein levels in human skeletal muscle.",
+        "not_this": "Use INHIBITS if the effect is on activity rather than abundance. Use PREVENTS if A blocks a process from occurring.",
+    },
+    RelationType.REGULATES: {
+        "definition": "A modulates B without a specified direction, or controls B in a context-dependent bidirectional manner.",
+        "example": "mTORC1 regulates autophagy depending on nutrient availability.",
+        "not_this": "Prefer ACTIVATES/INHIBITS or UPREGULATES/DOWNREGULATES when direction is clear. Use REGULATES only when direction is genuinely unspecified or bidirectional across conditions.",
+    },
+
+    # ── Category 3: PTMs ──────────────────────────────────────────────────────
+
+    RelationType.PHOSPHORYLATES: {
+        "definition": "A (a kinase) covalently adds a phosphate group to B at a specific residue, altering B's activity, stability, or localisation.",
+        "example": "AKT1 phosphorylates FOXO3 at Ser253, triggering its nuclear exclusion.",
+        "not_this": "Use ACTIVATES/INHIBITS to describe only the functional consequence if the phosphorylation mechanism is not the finding. Use DEPHOSPHORYLATES for the reverse reaction.",
+    },
+    RelationType.DEPHOSPHORYLATES: {
+        "definition": "A (a phosphatase) removes a phosphate group from B, reversing a prior phosphorylation event and altering B's activity.",
+        "example": "PP2A dephosphorylates AKT at Thr308, reducing insulin signalling in aged muscle tissue.",
+        "not_this": "Use PHOSPHORYLATES for the addition reaction. Use INHIBITS if only the functional suppression is reported without the phosphatase mechanism.",
+    },
+    RelationType.METHYLATES: {
+        "definition": "A (a methyltransferase) adds a methyl group to B, typically at a histone tail or DNA CpG site, altering gene expression or protein function.",
+        "example": "DNMT3A methylates the CDKN2A promoter CpG islands, silencing expression in aged cells.",
+        "not_this": "Use DOWNREGULATES if only the transcriptional consequence is reported. Use DEMETHYLATES for the reverse reaction.",
+    },
+    RelationType.DEMETHYLATES: {
+        "definition": "A (a demethylase, e.g. TET enzyme, KDM family) removes a methyl group from B (DNA CpG site or histone residue), reversing methylation-mediated silencing.",
+        "example": "TET2 demethylates the FOXO3 promoter, reactivating FOXO3 expression in aged hematopoietic stem cells.",
+        "not_this": "Use METHYLATES for the addition reaction. Use UPREGULATES if only the transcriptional reactivation consequence is described.",
+    },
+    RelationType.ACETYLATES: {
+        "definition": "A (an acetyltransferase) adds an acetyl group to B, typically modifying histone tails or protein stability.",
+        "example": "p300 acetylates H3K27 at enhancers of senescence-associated secretory phenotype genes.",
+        "not_this": "Use DEACETYLATES for the reverse reaction. Use METHYLATES or PHOSPHORYLATES for other modifications.",
+    },
+    RelationType.DEACETYLATES: {
+        "definition": "A (a deacetylase, e.g. sirtuin or HDAC) removes an acetyl group from B, typically restoring chromatin compaction or altering protein stability.",
+        "example": "SIRT1 deacetylates H3K56ac at senescence-associated gene promoters in aged cells.",
+        "not_this": "Use ACETYLATES for the addition reaction. Use DOWNREGULATES if only the transcriptional silencing consequence is reported.",
+    },
+    RelationType.UBIQUITINATES: {
+        "definition": "A (an E3 ubiquitin ligase) tags B with ubiquitin chains, typically targeting B for proteasomal degradation or altering its function.",
+        "example": "MDM2 ubiquitinates TP53, targeting it for proteasomal degradation in proliferating cells.",
+        "not_this": "Use DEGRADES if only the degradation outcome is described without the ubiquitination mechanism. Use SUMOYLATES for SUMO modification.",
+    },
+    RelationType.SUMOYLATES: {
+        "definition": "A (a SUMO E3 ligase) adds a SUMO (Small Ubiquitin-like Modifier) tag to B, altering its nuclear localisation, stability, or protein interactions.",
+        "example": "PIAS1 sumoylates FOXO4 at Lys188, promoting its transcriptional activity under stress.",
+        "not_this": "Use UBIQUITINATES if ubiquitin (not SUMO) is the modifier. Use DESUMOYLATES for the reverse reaction.",
+    },
+    RelationType.DESUMOYLATES: {
+        "definition": "A (a SUMO-specific protease, SENP family) removes a SUMO modifier from B, reversing sumoylation.",
+        "example": "SENP1 desumoylates HIF-1α, stabilising its transcriptional activity under hypoxia.",
+        "not_this": "Use SUMOYLATES for the addition reaction. Use DEUBIQUITINATES if ubiquitin (not SUMO) is removed.",
+    },
+    RelationType.DEUBIQUITINATES: {
+        "definition": "A (a deubiquitinase, DUB enzyme) removes ubiquitin chains from B, reversing ubiquitination and rescuing B from proteasomal degradation.",
+        "example": "USP7 deubiquitinates MDM2, stabilising MDM2 and promoting TP53 degradation.",
+        "not_this": "Use UBIQUITINATES for the addition reaction. Use DESUMOYLATES if SUMO (not ubiquitin) is removed.",
+    },
+    RelationType.HYDROXYLATES: {
+        "definition": "A (a hydroxylase enzyme, e.g. PHD1/2/3) adds a hydroxyl group to B, typically marking it for recognition or proteasomal degradation.",
+        "example": "PHD2 hydroxylates HIF-1α at Pro564 under normoxia, targeting it for VHL-mediated degradation.",
+        "not_this": "Use DEGRADES if the degradation outcome is the finding, not the hydroxylation mechanism. Use DEHYDROXYLATES for the reverse reaction.",
+    },
+    RelationType.DEHYDROXYLATES: {
+        "definition": "A removes a hydroxyl group from B, reversing prior hydroxylation.",
+        "example": "FIH dehydroxylates HIF-1α under specific conditions, reducing its transcriptional activation.",
+        "not_this": "Use HYDROXYLATES for the addition reaction.",
+    },
+    RelationType.GLYCOSYLATES: {
+        "definition": "A adds a sugar moiety (glycan) to B — includes O-GlcNAcylation on serine/threonine and N-glycosylation on asparagine.",
+        "example": "OGT glycosylates histone H3 at Ser10, competing with phosphorylation at this residue in aged cells.",
+        "not_this": "Use PHOSPHORYLATES if a phosphate rather than a sugar is added. Use DEGLYCOSYLATES for the reverse reaction.",
+    },
+    RelationType.DEGLYCOSYLATES: {
+        "definition": "A (a glycosidase or deglycosylase) removes a glycan or sugar moiety from B.",
+        "example": "OGA deglycosylates O-GlcNAc-modified proteins during mitosis, restoring normal signalling.",
+        "not_this": "Use GLYCOSYLATES for the addition reaction.",
+    },
+    RelationType.NEDDYLATES: {
+        "definition": "A (a NEDD8 E3 ligase) conjugates NEDD8 to B (typically a cullin), activating E3 ubiquitin ligase complexes.",
+        "example": "UBC12 neddylates CUL1 at Lys720, activating SCF complex E3 ligase activity.",
+        "not_this": "Use UBIQUITINATES if ubiquitin (not NEDD8) is added. Use DENEDDYLATES for the reverse reaction.",
+    },
+    RelationType.DENEDDYLATES: {
+        "definition": "A (the COP9 signalosome or deneddylase) removes NEDD8 from B, inactivating the E3 ubiquitin ligase complex.",
+        "example": "The COP9 signalosome deneddylates CUL1, downregulating SCF-mediated ubiquitination.",
+        "not_this": "Use NEDDYLATES for the addition reaction.",
+    },
+
+    # ── Category 4: Molecular Interactions ───────────────────────────────────
+
+    RelationType.BINDS_TO: {
+        "definition": "A forms a direct, demonstrated physical molecular bond with B — receptor-ligand, protein-protein domain contact, or protein-DNA binding confirmed by biochemical assay.",
+        "example": "Rapamycin binds to FKBP12, forming a ternary complex that allosterically inhibits mTOR.",
+        "not_this": "Use INTERACTS_WITH for functional interactions where direct binding is not demonstrated. Use IS_TARGET_OF for validated pharmacological target relationships.",
+    },
+    RelationType.INTERACTS_WITH: {
+        "definition": "A and B have a functional, genetic, or co-immunoprecipitation interaction where direct molecular binding is not explicitly demonstrated.",
+        "example": "SIRT1 interacts with FOXO3 in a calorie-restriction-dependent nutrient-sensing complex.",
+        "not_this": "Use BINDS_TO if direct molecular binding is confirmed by biochemical assay. Use IS_TARGET_OF if A is a validated drug target.",
+    },
+    RelationType.IS_TARGET_OF: {
+        "definition": "Gene, protein, or molecular entity A is a validated pharmacological or experimental target of drug or compound B.",
+        "example": "mTOR is a direct molecular target of rapamycin, mediating its lifespan-extending effects.",
+        "not_this": "Use BINDS_TO if only physical binding is demonstrated without established target relationship. Use INHIBITS if the functional consequence rather than target status is the finding.",
+    },
+
+    # ── Category 5: Localisation & Transport ─────────────────────────────────
+
+    RelationType.LOCALIZES_TO: {
+        "definition": "Protein or molecule A is found in, or translocates to, subcellular compartment or anatomical location B.",
+        "example": "FOXO3 localizes to the nucleus following AMPK activation under low nutrient conditions.",
+        "not_this": "Use EXPRESSED_IN if the finding is tissue-level gene expression rather than subcellular location. Use TRANSPORTS if an active shuttling mechanism is described.",
+    },
+    RelationType.TRANSPORTS: {
+        "definition": "A actively moves or shuttles molecule B between compartments or across membranes via a transport mechanism.",
+        "example": "ABCA1 transports cholesterol from macrophages across the plasma membrane to nascent HDL particles.",
+        "not_this": "Use LOCALIZES_TO if the result (new location) rather than the transport mechanism is the focus. Use SECRETES if A releases B into the extracellular space.",
+    },
+    RelationType.SECRETES: {
+        "definition": "Cell type, organelle, or organism A releases molecule B into the extracellular space, bloodstream, or surrounding tissue — through exocytosis, vesicle release, or secretory pathway.",
+        "example": "Senescent fibroblasts secrete IL-6, IL-8 and MMP-3 as core components of the senescence-associated secretory phenotype (SASP).",
+        "not_this": "Use TRANSPORTS if A shuttles B across a membrane without release into extracellular space. Use CONVERTS_TO if A chemically transforms B. Use PROMOTES if A stimulates another cell to secrete B.",
+    },
+
+    # ── Category 6: Metabolic, Structural & Process Membership ───────────────
+
+    RelationType.CONVERTS_TO: {
+        "definition": "A is enzymatically or chemically transformed into B, changing its molecular identity in a metabolic reaction.",
+        "example": "Glucose is converted to pyruvate via glycolysis in aged hepatocytes with impaired oxidative phosphorylation.",
+        "not_this": "Use DEGRADES if the conversion destroys A without producing a distinct product B. Use PHOSPHORYLATES/METHYLATES if A is modified covalently but retains identity.",
+    },
+    RelationType.CATALYZES: {
+        "definition": "Enzyme A directly catalyzes biochemical reaction or biological process B, providing the activation energy reduction for the reaction to proceed.",
+        "example": "Telomerase catalyzes the addition of telomeric repeats to chromosome ends in stem cells.",
+        "not_this": "Use CONVERTS_TO if the specific substrate-to-product transformation is the finding. Use REGULATES if A controls the rate of B without being the direct catalyst. Use PARTICIPATES_IN for general pathway membership.",
+    },
+    RelationType.CLEAVES: {
+        "definition": "Protease or enzyme A performs proteolytic cleavage of B, cutting the peptide bond at a specific site and producing defined cleavage fragments.",
+        "example": "Caspase-3 cleaves PARP-1 at Asp214, generating an 85 kDa fragment — a hallmark of apoptosis.",
+        "not_this": "Use DEGRADES if B is completely destroyed rather than cleaved into defined fragments. Use CONVERTS_TO if cleavage produces a specific biochemically active product.",
+    },
+    RelationType.DEGRADES: {
+        "definition": "A breaks down or destroys B through proteolysis, autophagy, lysosomal catabolism, or proteasomal degradation.",
+        "example": "The 26S proteasome degrades ubiquitinated TP53 in normally proliferating cells.",
+        "not_this": "Use UBIQUITINATES if the tagging mechanism is the finding. Use CLEAVES if A produces specific defined fragments from B.",
+    },
+    RelationType.PARTICIPATES_IN: {
+        "definition": "Gene, protein, or compound A is a functional member of pathway or biological process B, contributing to its execution.",
+        "example": "FOXO3 participates in the insulin/IGF-1 signalling pathway as a transcription factor target.",
+        "not_this": "Use REGULATES if A controls the pathway rather than being a member. Use PART_OF if A is a structural physical component rather than a functional participant.",
+    },
+    RelationType.PART_OF: {
+        "definition": "A is a structural physical subunit, component, or anatomical subdivision of B.",
+        "example": "The hippocampus is part of the medial temporal lobe memory system, showing accelerated atrophy in Alzheimer's disease.",
+        "not_this": "Use PARTICIPATES_IN if A functionally contributes to a biological process rather than being a structural component. Use LOCALIZES_TO if the focus is where A is found, not structural membership.",
+    },
+    RelationType.IS_MEMBER_OF: {
+        "definition": "Compound or entity A belongs to pharmacological class, protein family, or functional category B.",
+        "example": "Rapamycin is a member of the macrolide class of compounds with selective mTOR-inhibitory properties.",
+        "not_this": "Use PART_OF if A is a physical structural component of B. Use PARTICIPATES_IN if A functionally contributes to a process rather than being classified in a category.",
+    },
+
+    # ── Category 7: Causal / Mechanistic ─────────────────────────────────────
+
+    RelationType.CAUSES: {
+        "definition": "A is a direct, sufficient causal factor that brings about condition, disease, or event B. Causality is experimentally or epidemiologically established.",
+        "example": "Telomere shortening causes replicative senescence in primary human fibroblasts.",
+        "not_this": "Use PROMOTES if A facilitates rather than directly causes B. Use ASSOCIATES_WITH if causality is not experimentally established.",
+    },
+    RelationType.PROMOTES: {
+        "definition": "A facilitates, accelerates, or increases the likelihood of process or outcome B without being a direct sufficient cause.",
+        "example": "Caloric restriction promotes autophagy in liver, muscle, and brain tissue of aged rodents.",
+        "not_this": "Use CAUSES if A is the direct and sufficient experimental cause. Use ACTIVATES if A directly increases activity of a specific protein.",
+    },
+    RelationType.PREVENTS: {
+        "definition": "A blocks, suppresses, or reduces the occurrence or onset of process, disease, or outcome B.",
+        "example": "Regular aerobic exercise prevents age-related muscle atrophy in elderly human subjects.",
+        "not_this": "Use INHIBITS if A directly blocks a specific molecular activity. Use TREATS if A is a therapeutic for an already established disease.",
+    },
+
+    # ── Category 8: Clinical / Therapeutic ───────────────────────────────────
+
+    RelationType.TREATS: {
+        "definition": "Intervention or drug A reduces, reverses, or resolves the symptoms or underlying pathology of disease B.",
+        "example": "Metformin treats type 2 diabetes by reducing hepatic glucose production and improving insulin sensitivity.",
+        "not_this": "Use PALLIATES if A reduces severity without curing the underlying condition. Use PREVENTS if A stops onset of B before it occurs.",
+    },
+    RelationType.PALLIATES: {
+        "definition": "A reduces the severity, symptoms, or burden of disease B without curing or eliminating the underlying condition.",
+        "example": "Low-dose aspirin palliates chronic systemic inflammation in elderly arthritis patients.",
+        "not_this": "Use TREATS if A resolves the underlying condition. Use PREVENTS if A stops B from occurring.",
+    },
+    RelationType.BIOMARKER_FOR: {
+        "definition": "Molecule or measurement A reliably indicates the presence, risk, stage, or progression of condition B in a clinically validated context.",
+        "example": "Elevated p21 protein expression is a validated biomarker for cellular senescence in human tissue sections.",
+        "not_this": "Use PREDICTS if A forecasts a future outcome rather than indicating current state. Use ASSOCIATES_WITH if co-occurrence is shown without biomarker validation.",
+    },
+
+    # ── Category 9: Statistical / Epidemiological ─────────────────────────────
+
+    RelationType.ASSOCIATES_WITH: {
+        "definition": "A and B co-occur or are statistically linked in epidemiological or genetic studies, without established directionality or mechanistic causality.",
+        "example": "FOXO3 longevity variants associate with exceptional lifespan in multiple independent GWAS cohorts.",
+        "not_this": "Use CAUSES if experimental causality is established. Use CORRELATES_WITH if the finding is a statistical co-variation between two continuous measurements.",
+    },
+    RelationType.CORRELATES_WITH: {
+        "definition": "A and B show a statistical co-variation across conditions, samples, time points, or individuals, without a causal claim.",
+        "example": "NAD+ levels positively correlate with mitochondrial respiratory capacity across age groups.",
+        "not_this": "Use ASSOCIATES_WITH for genetic or epidemiological co-occurrence (GWAS alleles). Use CAUSES if experimental data establish causality.",
+    },
+    RelationType.COEXPRESSED_WITH: {
+        "definition": "Gene or protein A shows correlated expression levels with B across multiple tissues, conditions, or single-cell profiles — both go up or down together.",
+        "example": "SIRT1 is coexpressed with FOXO3 across 54 human tissues in GTEx, suggesting shared regulatory control.",
+        "not_this": "Use CORRELATES_WITH for general statistical co-variation between non-expression measurements. Use ASSOCIATES_WITH for genetic co-occurrence (GWAS) rather than expression correlation. Use REGULATES if A directly controls B's expression level.",
+    },
+    RelationType.IS_VARIANT_OF: {
+        "definition": "Genomic variant A (SNP, indel, structural variant) is a sequence variant of gene or genomic region B. Covers missense, nonsense, frameshift, splice-site, and synonymous variants.",
+        "example": "The rs2802292 SNP is a variant of FOXO3 and is associated with human longevity in multiple populations.",
+        "not_this": "Use ASSOCIATES_WITH if only the statistical co-occurrence with disease or phenotype is reported, not the variant-gene relationship. Use HAS_PHENOTYPE if the focus is on what phenotype the variant produces.",
+    },
+    RelationType.RESEMBLES: {
+        "definition": "A and B share substantial structural, functional, or phenotypic similarity. Commonly used for disease-disease or compound-compound comparisons.",
+        "example": "Hutchinson-Gilford Progeria syndrome resembles accelerated normal human ageing at the molecular level.",
+        "not_this": "Use HAS_PHENOTYPE to describe a specific phenotypic feature rather than overall similarity.",
+    },
+    RelationType.PREDICTS: {
+        "definition": "A (a measurement, signature, marker, or clinical test) reliably forecasts future outcome or event B in patients or experimental subjects.",
+        "example": "The 76-gene expression signature predicts distant metastasis within 5 years in lymph-node-negative breast cancer.",
+        "not_this": "Use BIOMARKER_FOR if A indicates current state rather than forecasting future outcome. Use CORRELATES_WITH if the relationship is statistical co-variation without demonstrated prognostic utility.",
+    },
+
+    # ── Category 10: Disease / Phenotype ─────────────────────────────────────
+
+    RelationType.HAS_SYMPTOM: {
+        "definition": "Disease or condition A clinically presents with observable symptom or clinical sign B in patients.",
+        "example": "Werner syndrome presents with premature ageing symptoms including bilateral cataracts and atherosclerosis.",
+        "not_this": "Use HAS_PHENOTYPE if B is a molecular or cellular phenotype rather than a clinical symptom. Use CAUSES if the mechanism by which A produces B is described.",
+    },
+    RelationType.HAS_PHENOTYPE: {
+        "definition": "Gene, variant, or experimental intervention A produces a reproducible molecular, cellular, or organismal phenotype B.",
+        "example": "SIRT1 knockout mice exhibit a phenotype of accelerated metabolic ageing and increased fat accumulation.",
+        "not_this": "Use HAS_SYMPTOM if B is a clinical symptom in a patient context. Use CAUSES if the mechanism of phenotype production is described.",
+    },
+
+    # ── Category 11: Longevity-Specific ──────────────────────────────────────
+
+    RelationType.EXTENDS_LIFESPAN: {
+        "definition": "Intervention, gene variant, or compound A significantly increases the lifespan of organism B in controlled experimental or epidemiological studies.",
+        "example": "Caloric restriction extends lifespan in C. elegans by approximately 30% compared to ad-libitum controls.",
+        "not_this": "Use PROMOTES if A improves healthspan without a measured lifespan extension. Use TREATS if A addresses a specific disease rather than the ageing process itself.",
+    },
+    RelationType.REDUCES_LIFESPAN: {
+        "definition": "Mutation, compound, or condition A significantly decreases the total lifespan of organism B in controlled studies.",
+        "example": "Loss-of-function mutation in daf-16 reduces lifespan in C. elegans by 50% versus wild type.",
+        "not_this": "Use CAUSES if A causes a specific disease that secondarily shortens lifespan. Use REDUCES_HEALTHSPAN if healthy function is impaired without total lifespan reduction. Use INHIBITS if A blocks a protective pathway without a direct lifespan measurement.",
+    },
+    RelationType.EXTENDS_HEALTHSPAN: {
+        "definition": "Intervention, gene, or compound A significantly prolongs the healthy, disease-free, functionally capable period of organism B — improving physical or cognitive function without necessarily increasing maximum total lifespan.",
+        "example": "Rapamycin extends healthspan in aged mice, improving memory retention and grip strength even when treatment begins at 20 months.",
+        "not_this": "Use EXTENDS_LIFESPAN if total lifespan (not just healthy period) is explicitly measured and increased. Use TREATS if A addresses a specific disease rather than the ageing process. Use PREVENTS if A blocks onset of a specific condition.",
+    },
+    RelationType.REDUCES_HEALTHSPAN: {
+        "definition": "Mutation, compound, or condition A shortens the healthy, functional period of organism B, accelerating age-related physical or cognitive decline without necessarily reducing total lifespan.",
+        "example": "Telomerase deficiency reduces healthspan in mice, causing premature loss of tissue regenerative capacity and early onset of sarcopenia.",
+        "not_this": "Use REDUCES_LIFESPAN if total lifespan is also shortened. Use CAUSES if A causes a specific named disease. Use INHIBITS if A blocks a protective pathway without a measured healthspan outcome.",
+    },
+    RelationType.REPROGRAMS: {
+        "definition": "Factor, intervention, or treatment A resets or reverses the epigenetic state, gene expression landscape, or developmental identity of cell or tissue B toward a younger or more primitive state.",
+        "example": "The Yamanaka factors (OSKM) reprogram aged somatic fibroblasts to induced pluripotent stem cells, resetting their epigenetic age clock to near-zero.",
+        "not_this": "Use DEMETHYLATES or DEACETYLATES if a specific single-mark epigenetic modification is the finding. Use REGULATES if A modulates B's expression without resetting cellular identity. Use ACTIVATES if only one target pathway is turned on.",
+    },
+
+    # ── Category 12: Infection / Microbiology ─────────────────────────────────
+
+    RelationType.INFECTS: {
+        "definition": "Pathogen or microorganism A infects, colonises, or invades host organism or cell type B.",
+        "example": "SARS-CoV-2 infects human lung epithelial cells via ACE2 receptor-mediated entry.",
+        "not_this": "Use CAUSES if the focus is on the disease outcome rather than the infection event itself. Use BINDS_TO if the receptor binding rather than infection is the finding.",
+    },
+
+    # ── Category 13: Homology ──────────────────────────────────────────────────
+
+    RelationType.ORTHOLOG_OF: {
+        "definition": "Gene or protein A is the ortholog of gene/protein B in another species (diverged by speciation, not duplication); they share a common ancestor and typically retain the same function.",
+        "example": "Human TP53 is ortholog_of mouse Trp53.",
+        "not_this": "Use PARALOG_OF if the genes diverged within the same genome via duplication. Do not use for genes that merely share high sequence similarity without known evolutionary event.",
+    },
+
+    RelationType.PARALOG_OF: {
+        "definition": "Gene or protein A is the paralog of gene/protein B in the same (or related) genome; they share a common ancestor but diverged by gene duplication.",
+        "example": "Human BRCA1 is paralog_of BRCA2 (same genome, duplicated ancestor).",
+        "not_this": "Use ORTHOLOG_OF if the genes are in different species and diverged by speciation. Do not use for genes with no documented duplication event.",
+    },
+
+    # ── Category 14: Ontology hierarchy ───────────────────────────────────────
+
+    RelationType.SUBCLASS_OF: {
+        "definition": "Entity A is a subclass/subtype of entity B (is-a relationship in an ontology hierarchy). Covers DO subclass_of, CL subclass_of, HPO subclass_of, GO is_a, etc.",
+        "example": "Alzheimer's disease subclass_of neurodegenerative disease.",
+        "not_this": "Use PART_OF if A is a physical component of B rather than a subtype. Do not use SUBCLASS_OF for functional or causal relationships.",
+    },
+
+    RelationType.HAS_PART: {
+        "definition": "Entity A contains or comprises B as a physical or structural component (part-of inverse: A has_part B).",
+        "example": "Nucleosome has_part histone H3.",
+        "not_this": "Use PART_OF if the relation is expressed as 'B is part of A'. Use SUBCLASS_OF for type hierarchies. Use PARTICIPATES_IN for functional membership.",
+    },
+
+    # ── Category 15: Regulatory genomics ──────────────────────────────────────
+
+    RelationType.REGULATES_EXPRESSION_OF: {
+        "definition": "A non-coding regulatory element (enhancer, promoter, TFBS, miRNA, lncRNA) controls or modulates the transcriptional or post-transcriptional expression of gene B.",
+        "example": "Enhancer element at chr17:7.5Mb regulates_expression_of TP53.",
+        "not_this": "Use UPREGULATES or DOWNREGULATES when the direction is known and the mechanism is protein-mediated. Use TRANSCRIBES_TO for the DNA-to-RNA product relation. This type is for regulatory element → gene control specifically.",
+    },
+
+    RelationType.TARGETS: {
+        "definition": "A transcription factor, regulatory protein, small RNA, or pharmacological compound targets a specific gene locus, promoter region, or molecular site for regulation or binding.",
+        "example": "MYC targets E-box elements in the promoters of ribosome biogenesis genes.",
+        "not_this": "Use BINDS_TO for physical binding without regulatory intent. Use INHIBITS/ACTIVATES when the downstream functional consequence is the finding. TARGETS implies a directed regulatory or therapeutic action.",
+    },
+
+    RelationType.OPEN_CHROMATIN_AT: {
+        "definition": "A cell type, condition, or genomic element is characterised by open/accessible chromatin at a specific genomic region (ATAC-seq or DNase-seq accessibility).",
+        "example": "T-helper cells show open_chromatin_at the IL2 promoter region upon activation.",
+        "not_this": "Use EPIGENOMIC_FEATURE as an entity type for the chromatin feature itself. Use REGULATES_EXPRESSION_OF if the finding is about gene expression control, not chromatin accessibility. This type is for accessibility evidence specifically.",
+    },
+
+    # ── Category 16: Genomic overlap ──────────────────────────────────────────
+
+    RelationType.OVERLAPS: {
+        "definition": "Genomic feature A physically overlaps feature B by chromosomal coordinate (positional overlap, not causal). Covers gene/enhancer/promoter overlapping structural variants, TADs, or other features.",
+        "example": "A 500 kb deletion overlaps the BRCA1 gene and an adjacent enhancer cluster.",
+        "not_this": "Use LOCALIZES_TO for functional localization to a compartment. Use REGULATES_EXPRESSION_OF when the overlap has a regulatory consequence. OVERLAPS is purely coordinate-based with no implied function.",
+    },
+
+    # ── Category 17: Capability ────────────────────────────────────────────────
+
+    RelationType.CAPABLE_OF: {
+        "definition": "Entity A (cell type, organism, tissue) possesses the inherent ability or functional capacity to perform biological process B — not a single observed event but an established capability.",
+        "example": "Macrophages are capable_of phagocytosis.",
+        "not_this": "Use PARTICIPATES_IN if the entity is observed executing the process in a specific experiment. Use ACTIVATES/PROMOTES if A causes B to occur. CAPABLE_OF describes potential, not execution.",
+    },
+
+    # ── Category 18: GO/RO molecular function relations ───────────────────────
+
+    RelationType.ENABLES: {
+        "definition": "A gene product (protein/RNA) enables a specific molecular function or activity — the gene product is the executor of that function (GO:enables / RO:0002327).",
+        "example": "ATM protein enables double-strand break repair activity.",
+        "not_this": "Use PARTICIPATES_IN for broader process membership. Use ACTIVATES if A switches on B. ENABLES is specifically a GO molecular function annotation: gene product X enables MF Y.",
+    },
+
+    RelationType.ACTS_UPSTREAM_OF: {
+        "definition": "Gene product A is causally upstream of biological process B — A's activity is required for or influences B, but A is not a direct participant in B (RO:0002263).",
+        "example": "BRCA1 acts_upstream_of homologous recombination repair.",
+        "not_this": "Use PARTICIPATES_IN if A directly takes part in process B. Use REGULATES if A modulates B's rate or extent. ACTS_UPSTREAM_OF is specifically a GO causal annotation where the gene product acts before the process begins.",
+    },
+
+    RelationType.CONTRIBUTES_TO: {
+        "definition": "Gene, variant, or entity A partially contributes to disease or biological process B — A is a predisposing or partial causal factor, not the sole cause.",
+        "example": "APOE ε4 variant contributes_to late-onset Alzheimer's disease risk.",
+        "not_this": "Use CAUSES if A is the direct and sufficient cause of B. Use ASSOCIATES_WITH if the link is purely statistical with no established mechanism. CONTRIBUTES_TO implies partial/predisposing causality.",
+    },
+
+    RelationType.OCCURS_IN: {
+        "definition": "A biological process, reaction, or event A occurs in anatomical entity or cell type B — specifies the spatial context where the process takes place.",
+        "example": "Oxidative phosphorylation occurs_in the mitochondrial inner membrane.",
+        "not_this": "Use LOCALIZES_TO for an entity (protein, molecule) being located in a compartment. Use EXPRESSED_IN for gene/protein expression context. OCCURS_IN is for processes/events, not entities.",
+    },
+
+    # ── Category 19: Developmental lineage ────────────────────────────────────
+
+    RelationType.DEVELOPS_FROM: {
+        "definition": "Cell type, tissue, or organism A develops from precursor entity B through a developmental process (RO:0002202 / Uberon developmental lineage).",
+        "example": "Cardiomyocytes develop_from cardiac progenitor cells.",
+        "not_this": "Use DERIVES_FROM if the relation is metabolic or product-based rather than developmental. Use SUBCLASS_OF for type hierarchy. DEVELOPS_FROM requires an actual developmental/differentiation event.",
+    },
+
+    RelationType.DERIVES_FROM: {
+        "definition": "Entity A (metabolite, product, signal) is derived or produced from entity B through a chemical, metabolic, or processing event.",
+        "example": "Cortisol derives_from cholesterol via the steroidogenic pathway.",
+        "not_this": "Use DEVELOPS_FROM for cell/tissue developmental lineage. Use CONVERTS_TO for the forward direction (B converts to A). DERIVES_FROM is the inverse: A is the downstream product of B.",
+    },
+
+    # ── Category 20: Substrate / co-localisation ───────────────────────────────
+
+    RelationType.HAS_SUBSTRATE: {
+        "definition": "Enzyme, reaction, or molecular machine A has molecule B as its substrate — B is the molecule that A acts upon.",
+        "example": "Hexokinase has_substrate glucose.",
+        "not_this": "Use CATALYZES for the reaction event itself. Use BINDS_TO if the focus is physical binding without catalytic transformation. HAS_SUBSTRATE specifically identifies the substrate molecule.",
+    },
+
+    RelationType.COLOCALIZES_WITH: {
+        "definition": "Two entities A and B are found in the same cellular compartment, tissue, or anatomical location — spatial co-occurrence without implying direct interaction.",
+        "example": "RAD51 colocalizes_with BRCA2 in nuclear foci after DNA damage.",
+        "not_this": "Use INTERACTS_WITH or BINDS_TO if direct molecular contact is established. Use LOCALIZES_TO if the focus is where one entity resides. COLOCALIZES_WITH is purely spatial co-occurrence of two entities.",
+    },
+
+    # ── Category 21: Clinical / pharmacological ────────────────────────────────
+
+    RelationType.DIAGNOSES: {
+        "definition": "Clinical test, biomarker, or procedure A diagnoses or is used to detect disease or condition B.",
+        "example": "Elevated PSA level diagnoses prostate cancer.",
+        "not_this": "Use BIOMARKER_FOR if A is a molecular marker associated with B without implying a diagnostic test. Use ASSOCIATES_WITH for statistical associations. DIAGNOSES implies clinical utility for disease detection.",
+    },
+
+    RelationType.CONTRAINDICATED_IN: {
+        "definition": "Drug, treatment, or intervention A is contraindicated in disease, condition, or patient group B — A should not be used in the presence of B.",
+        "example": "Metformin is contraindicated_in severe renal impairment.",
+        "not_this": "Use TREATS for positive therapeutic use. Use CAUSES for adverse effects. CONTRAINDICATED_IN specifically means the drug is clinically unsafe or inappropriate in that condition.",
+    },
+
+    RelationType.IN_CLINICAL_TRIALS_FOR: {
+        "definition": "Drug, intervention, or therapy A is currently under clinical investigation (Phase I–IV trials) for disease or condition B.",
+        "example": "Senolytics are in_clinical_trials_for age-related frailty.",
+        "not_this": "Use TREATS if clinical efficacy is already established. Use PREVENTS if the trial is prophylactic. IN_CLINICAL_TRIALS_FOR implies ongoing evaluation — not yet approved.",
+    },
+
+    # ── Category 22: Biolink completeness additions ───────────────────────────
+
+    RelationType.TRANSCRIBED_FROM: {
+        "definition": "Transcript A is produced by transcription from gene/DNA locus B (inverse of transcribes_to; biolink:transcribed_from / RO:0002511).",
+        "example": "BRCA1 mRNA is transcribed_from the BRCA1 gene locus on chromosome 17.",
+        "not_this": "Use TRANSCRIBES_TO if the subject is the gene/DNA and object is the transcript. TRANSCRIBED_FROM is the same fact written from the transcript's perspective.",
+    },
+
+    RelationType.TRANSLATION_OF: {
+        "definition": "Protein A is the translation product of transcript B (inverse of translates_to; biolink:translation_of).",
+        "example": "p53 protein is the translation_of TP53 mRNA.",
+        "not_this": "Use TRANSLATES_TO if the subject is the mRNA/transcript and object is the protein. TRANSLATION_OF is the same fact from the protein's perspective.",
+    },
+
+    RelationType.IN_COMPLEX_WITH: {
+        "definition": "Entity A and entity B are co-members of the same stable molecular complex — both are structural subunits of the same assembly.",
+        "example": "EZH2 is in_complex_with SUZ12 and EED within the PRC2 complex.",
+        "not_this": "Use INTERACTS_WITH for transient physical interactions. Use BINDS_TO for direct binding events. IN_COMPLEX_WITH requires stable co-complex membership, not just a transient encounter.",
+    },
+
+    RelationType.HAS_METABOLITE: {
+        "definition": "Enzyme, reaction, or metabolic pathway A produces or has molecule B as a metabolite product or intermediate.",
+        "example": "Glycolysis has_metabolite pyruvate.",
+        "not_this": "Use HAS_SUBSTRATE for the input molecule. Use CATALYZES for the reaction event. HAS_METABOLITE identifies the output metabolite of a process.",
+    },
+
+    RelationType.GENETICALLY_INTERACTS_WITH: {
+        "definition": "Gene A genetically interacts with gene B — double mutants show a phenotype that differs from what is expected from single mutants (epistasis, synthetic lethality, suppression).",
+        "example": "BRCA1 genetically_interacts_with PARP1 — synthetic lethality exploited by PARP inhibitors.",
+        "not_this": "Use INTERACTS_WITH for protein-level physical interaction. Use ASSOCIATES_WITH for statistical co-occurrence. GENETICALLY_INTERACTS_WITH requires evidence of a genetic interaction at the phenotypic level.",
+    },
+
+    RelationType.PHARMACOLOGICALLY_INTERACTS_WITH: {
+        "definition": "Drug A pharmacologically interacts with drug B or molecular target B — altering absorption, distribution, metabolism, or pharmacodynamic effect.",
+        "example": "Warfarin pharmacologically_interacts_with aspirin (increased bleeding risk).",
+        "not_this": "Use BINDS_TO for the molecular binding event. Use TREATS for therapeutic use. PHARMACOLOGICALLY_INTERACTS_WITH covers drug–drug and drug–target pharmacokinetic/pharmacodynamic interactions.",
+    },
+
+    RelationType.PRECEDES: {
+        "definition": "Event or process A temporally precedes event or process B — A occurs before B in a defined biological sequence or cascade.",
+        "example": "DNA damage response precedes apoptosis induction.",
+        "not_this": "Use CAUSES if A is the direct causal driver of B. Use ACTS_UPSTREAM_OF for causal upstream relationships. PRECEDES is purely temporal — it does not imply causation.",
+    },
+
+    RelationType.AMELIORATES: {
+        "definition": "Gene, treatment, or intervention A ameliorates (mitigates or reduces severity of) disease or condition B without necessarily curing it — weaker than TREATS.",
+        "example": "Metformin ameliorates insulin resistance in type 2 diabetes.",
+        "not_this": "Use TREATS if the intervention provides established therapeutic benefit or cure. Use PREVENTS if A stops B from occurring. AMELIORATES implies partial improvement in existing condition.",
+    },
+
+    RelationType.EXACERBATES: {
+        "definition": "Gene, compound, or condition A exacerbates (worsens or accelerates) disease or condition B.",
+        "example": "High dietary fat intake exacerbates non-alcoholic fatty liver disease.",
+        "not_this": "Use CAUSES if A is the initial cause of B. Use PROMOTES for broader positive regulatory effects. EXACERBATES specifically means A makes an already-existing condition B worse.",
+    },
+
+    RelationType.IN_TAXON: {
+        "definition": "Biological entity A (gene, protein, cell type, process) is found in or belongs to organism taxon B.",
+        "example": "FOXO3 gene is in_taxon Homo sapiens.",
+        "not_this": "Use ORGANISM as an EntityType when the taxon is itself a node in the graph. IN_TAXON as a relation links a biological entity to its species context — useful for cross-species papers.",
+    },
+}
+
+
+# ── SECTION 5 — SYNONYM_MAP ───────────────────────────────────────────────────
+# Moved to tools/build_taxonomy.py — used only by the offline schema audit tool.
+# Not needed at runtime: the LLM normalises predicates directly from the
+# closed taxonomy in the system prompt.
+SYNONYM_MAP: Dict[str, RelationType] = {}
+
+
