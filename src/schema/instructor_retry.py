@@ -155,8 +155,8 @@ def extract(chunk: dict) -> ExtractionResult:
                 messages.append({
                     "role":    "user",
                     "content": (
-                        f"Schema validation failed: {last_error}\n"
-                        "Fix the specific field mentioned and retry. "
+                        f"Attempt failed: {last_error}\n"
+                        "If this was a schema validation error, fix the specific field mentioned and retry. "
                         "Valid relation types: "
                         + ", ".join(r.value for r in RelationType)
                     ),
