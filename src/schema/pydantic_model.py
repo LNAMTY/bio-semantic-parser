@@ -25,7 +25,7 @@ class BiologicalRelation(BaseModel):
             "True if the chunk contains at least one clear, specific biological "
             "relation between two named entities that maps to the closed taxonomy. "
             "False if the text is purely methodological, statistical, or too vague. "
-            "When False — stop: leave all remaining fields at their defaults."
+            "When False — stop: leave all remaining fields at their defaults except reasoning, which must still explain why no relation was found."
         )
     )
 
@@ -67,7 +67,7 @@ class BiologicalRelation(BaseModel):
         default=False,
         description=(
             "Pass through the negation flag from Layer 4. "
-            "True if the relation is negated in the source text "
+            "True if Layer 4 marks either entity as NEGATED/ABSENT, or if the relation is explicitly negated in the source text "
             "(e.g. 'failed to demonstrate', 'no significant effect')."
         )
     )
