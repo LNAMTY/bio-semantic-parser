@@ -1,21 +1,10 @@
 """Inference wrapper around the vendored s2e-coref model.
 
-The upstream repo only ships dataset-level evaluation (jsonlines + the CoNLL
-scorer); it has no "raw text -> clusters" entry point. This module adds one:
-
-  1. word-tokenise the text while tracking each word's character span,
-  2. sub-tokenise with the Longformer tokenizer the way s2e's ``data.py`` does,
-  3. run the S2E model with ``return_all_outputs=True``,
-  4. decode antecedents into clusters exactly like s2e's ``eval.py``,
-  5. map the predicted token spans back to character offsets.
-
-It returns clusters as ``[[(char_start, char_end), ...], ...]`` — the same shape
-the LingMess path produces — so the two can be merged uniformly.
-
-The model weights are NOT bundled (the trained checkpoint is ~1.6 GB and lives on
-Dropbox, see README). The resolver is only activated when ``S2E_MODEL_PATH``
-points at a directory containing the checkpoint; otherwise the caller falls back
-to LingMess-only.
+The upstream repo only ships dataset-level evaluation; it has no raw-text entry
+point. This adds one: tokenise while tracking character spans, run the model,
+decode antecedents like s2e's ``eval.py``, and map token spans back to character
+offsets. Clusters come out as ``[[(char_start, char_end), ...], ...]`` — the same
+shape the LingMess path produces, so the two merge uniformly.
 """
 
 from __future__ import annotations
@@ -38,8 +27,6 @@ S2E_ARGS = SimpleNamespace(
 )
 
 DEFAULT_TOKENIZER = os.getenv("S2E_TOKENIZER", "allenai/longformer-large-4096")
-# Longformer attention works in windows of 512; keep documents within one window
-# set to avoid the global-attention bookkeeping the batched eval path handles.
 MAX_TOKENS = int(os.getenv("S2E_MAX_TOKENS", "4096"))
 
 _WORD_RE = re.compile(r"\w+|[^\w\s]", re.UNICODE)
@@ -63,25 +50,18 @@ class S2EResolver:
 
     @property
     def configured(self) -> bool:
-        """True only when the checkpoint file is actually present.
-
-        Checking the file (not just the directory) means an empty mounted volume
-        degrades to a clean LingMess-only fallback instead of a load traceback.
-        """
+        # Check the file, not just the dir, so an empty mounted volume falls back
+        # to LingMess-only cleanly instead of failing on load.
         return bool(self.model_path) and os.path.isfile(
             os.path.join(self.model_path, "pytorch_model.bin")
         )
-
-    @property
-    def ready(self) -> bool:
-        return self._model is not None
 
     def load(self):
         if self._model is not None:
             return
         if not self.configured:
             raise FileNotFoundError(
-                f"S2E_MODEL_PATH is not set or not a directory: {self.model_path!r}"
+                f"s2e checkpoint not found under S2E_MODEL_PATH={self.model_path!r}"
             )
         import torch
         from transformers import LongformerConfig, LongformerTokenizerFast
@@ -109,16 +89,13 @@ class S2EResolver:
         self._model = model
         self._tokenizer = LongformerTokenizerFast.from_pretrained(self.tokenizer_name)
 
-    # ------------------------------------------------------------------ #
     def _encode(self, text: str):
-        """Mirror s2e's data.py tokenisation for a single, speaker-less document.
+        """Tokenise like s2e's data.py (single, speaker-less document).
 
-        Returns (input_ids_tensor, attention_mask_tensor, token_idx_to_word_idx,
-        word_spans). ``token_idx_to_word_idx`` is indexed by position in the model
-        sequence (index 0 == the <s> special token).
+        Returns (input_ids, attention_mask, token_idx_to_word_idx, word_spans),
+        where token_idx_to_word_idx is indexed by model-sequence position
+        (index 0 == the leading <s>).
         """
-        import torch
-
         words = _word_spans(text)
         token_ids = []
         token_idx_to_word_idx = [0]  # for the leading <s>

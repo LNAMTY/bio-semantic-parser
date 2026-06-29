@@ -118,13 +118,8 @@ class CorefResolver:
         return primary
 
     def _merge_clusters(self, text: str, primary: list, secondary: list) -> list:
-        """Add s2e clusters that fill gaps the primary model left.
-
-        For each s2e cluster we keep only the anaphor mentions that do not overlap
-        anything the primary model already resolved, and attach them to the s2e
-        cluster's named representative. This links missed anaphors to an entity
-        without ever overriding a primary decision.
-        """
+        """Attach s2e anaphors the primary model didn't resolve to their entity,
+        without ever overriding a primary decision."""
         merged = [list(c) for c in primary]
         covered = [span for cluster in primary for span in cluster]
         for cluster in secondary:

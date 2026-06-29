@@ -80,9 +80,7 @@ def test_cascade_rewrites_both_primary_and_s2e_mentions():
 
 def test_overlapping_replacements_do_not_corrupt_text():
     text = "The drug worked. It helped."
-    # Two clusters whose anaphors overlap on "The drug" — the apply step must not
-    # crash or double-substitute.
-    rep = span(text, "Aspirin") if "Aspirin" in text else (0, 3)  # "The"
+    # Overlapping anaphors ("the drug" vs "drug") must not crash or double-substitute.
     clusters = [
         [span(text, "drug"), span(text, "It")],
         [(0, 8), span(text, "It")],  # "The drug" overlaps "drug"

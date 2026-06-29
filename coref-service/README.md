@@ -156,22 +156,6 @@ tests/             unit tests (no model required)
 
 ---
 
-## Make targets
-
-```
-make help          list all targets
-make up            run LingMess (default)
-make cascade       run LingMess → s2e cascade
-make health        print /health
-make resolve       resolve a sample (override TEXT=...)
-make logs          follow logs
-make down          stop
-make test          run unit tests
-make download-s2e  fetch the s2e checkpoint
-```
-
----
-
 ## Troubleshooting
 
 | Symptom | Cause / fix |
