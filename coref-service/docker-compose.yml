@@ -1,3 +1,4 @@
+
 services:
   coref-service:
     # Pulls the prebuilt image (no local build needed): docker compose pull && docker compose up -d
@@ -7,13 +8,17 @@ services:
     ports:
       - "5000:5000"
     environment:
-      COREF_MODEL: lingmess        # lingmess or fcoref
+      COREF_MODEL: lingmess        # lingmess | fcoref | cascade
       COREF_DEVICE: cpu            # cpu or cuda:0
       COREF_RESOLVE_MODE: anaphora # anaphora or pronouns_only
       COREF_PRELOAD: "true"
       HF_HUB_DISABLE_XET: "1"
+      # For COREF_MODEL=cascade, mount the s2e checkpoint and point at it:
+      # S2E_MODEL_PATH: /models/s2e
     volumes:
       - coref-models:/models       # cache the downloaded model weights
+      # Mount the s2e checkpoint dir (pytorch_model.bin + config.json) for cascade:
+      # - ./s2e-model:/models/s2e:ro
 
 volumes:
   coref-models:

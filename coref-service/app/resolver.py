@@ -40,18 +40,41 @@ class CorefResolver:
         # "anaphora": rewrite pronouns and definite/demonstrative noun phrases.
         # "pronouns_only": rewrite pronouns only.
         self.resolve_mode = resolve_mode.lower()
-        self._model = None
+        # "cascade": run the LingMess model first, then let s2e-coref resolve the
+        # mentions LingMess missed (see _merge_clusters). Requires S2E_MODEL_PATH.
+        self.cascade = self.model_name == "cascade"
+        self.primary_name = "lingmess" if self.cascade else self.model_name
+        self._model = None   # primary fastcoref model
+        self._s2e = None     # optional secondary s2e resolver (cascade only)
 
     def load(self):
-        if self._model is not None:
-            return
-        logger.info("Loading %s on %s", self.model_name, self.device)
-        if self.model_name == "fcoref":
-            from fastcoref import FCoref
-            self._model = FCoref(device=self.device)
-        else:
-            from fastcoref import LingMessCoref
-            self._model = LingMessCoref(device=self.device)
+        if self._model is None:
+            logger.info("Loading primary model %s on %s", self.primary_name, self.device)
+            if self.primary_name == "fcoref":
+                from fastcoref import FCoref
+                self._model = FCoref(device=self.device)
+            else:
+                from fastcoref import LingMessCoref
+                self._model = LingMessCoref(device=self.device)
+
+        if self.cascade and self._s2e is None:
+            from app.s2e_resolver import S2EResolver
+            s2e = S2EResolver(device=self.device)
+            if not s2e.configured:
+                logger.warning(
+                    "Cascade requested but S2E_MODEL_PATH is unset/missing; "
+                    "falling back to %s only.", self.primary_name
+                )
+            else:
+                try:
+                    s2e.load()
+                    self._s2e = s2e
+                    logger.info("Cascade ready: %s -> s2e-coref", self.primary_name)
+                except Exception:
+                    logger.exception(
+                        "s2e-coref failed to load; continuing with %s only.",
+                        self.primary_name,
+                    )
 
     @property
     def ready(self) -> bool:
@@ -61,19 +84,67 @@ class CorefResolver:
         if not text or not text.strip():
             return text
         self.load()
-        preds = self._model.predict(texts=[text])
-        clusters = preds[0].get_clusters(as_strings=False)
+        clusters = self._predict_clusters(text)
         return self._apply_clusters(text, clusters)
 
     def clusters(self, text: str) -> list:
         if not text or not text.strip():
             return []
         self.load()
-        preds = self._model.predict(texts=[text])
         return [
             [{"start": s, "end": e, "text": text[s:e]} for (s, e) in cluster]
-            for cluster in preds[0].get_clusters(as_strings=False)
+            for cluster in self._predict_clusters(text)
         ]
+
+    def _predict_clusters(self, text: str) -> list:
+        """Return coreference clusters as lists of (start, end) char spans.
+
+        In cascade mode the LingMess clusters are authoritative and s2e-coref only
+        contributes resolutions for mentions LingMess left uncovered.
+        """
+        preds = self._model.predict(texts=[text])
+        primary = [list(c) for c in preds[0].get_clusters(as_strings=False)]
+        if self.cascade and self._s2e is not None:
+            try:
+                secondary = self._s2e.clusters(text)
+                return self._merge_clusters(text, primary, secondary)
+            except Exception:
+                logger.exception("s2e-coref inference failed; using primary clusters only.")
+        return primary
+
+    def _merge_clusters(self, text: str, primary: list, secondary: list) -> list:
+        """Add s2e clusters that fill gaps the primary model left.
+
+        For each s2e cluster we keep only the anaphor mentions that do not overlap
+        anything the primary model already resolved, and attach them to the s2e
+        cluster's named representative. This links missed anaphors to an entity
+        without ever overriding a primary decision.
+        """
+        merged = [list(c) for c in primary]
+        covered = [span for cluster in primary for span in cluster]
+        for cluster in secondary:
+            if len(cluster) < 2:
+                continue
+            rep = self._representative(text, cluster)
+            rep_text = text[rep[0]:rep[1]].strip()
+            if self._is_pronoun(rep_text):
+                continue
+            novel = [
+                span for span in cluster
+                if span != rep and not self._is_covered(span, covered)
+            ]
+            if not novel:
+                continue
+            merged.append([rep] + novel)
+            covered.extend(novel)
+        return merged
+
+    def _is_covered(self, span, covered) -> bool:
+        return any(self._overlaps(span, other) for other in covered)
+
+    @staticmethod
+    def _overlaps(a, b) -> bool:
+        return a[0] < b[1] and b[0] < a[1]
 
     def _is_pronoun(self, mention: str) -> bool:
         return mention.strip().lower() in PRONOUNS
@@ -121,9 +192,14 @@ class CorefResolver:
                     new = new[:1].upper() + new[1:]
                 replacements.append((span[0], span[1], new))
 
-        # Apply from the end so earlier offsets stay valid.
+        # Apply from the end so earlier offsets stay valid. Skip any replacement
+        # that overlaps one already applied (can happen when merging two models).
         replacements.sort(key=lambda r: r[0], reverse=True)
         out = text
+        last_start = len(text) + 1
         for start, end, new in replacements:
+            if end > last_start:
+                continue
             out = out[:start] + new + out[end:]
+            last_start = start
         return out

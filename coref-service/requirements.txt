@@ -6,3 +6,5 @@ tokenizers==0.13.3
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
+# numpy is used by the vendored s2e-coref decode step (app/s2e).
+numpy<2

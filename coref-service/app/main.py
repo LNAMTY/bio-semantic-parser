@@ -1,3 +1,4 @@
+
 """HTTP API for the coreference service.
 
     GET  /health             -> service and model status
@@ -17,10 +18,11 @@ from app.resolver import CorefResolver
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("coref-service")
 
-MODEL = os.getenv("COREF_MODEL", "lingmess")
+MODEL = os.getenv("COREF_MODEL", "lingmess")  # lingmess | fcoref | cascade
 DEVICE = os.getenv("COREF_DEVICE", "cpu")
 RESOLVE_MODE = os.getenv("COREF_RESOLVE_MODE", "anaphora")
 PRELOAD = os.getenv("COREF_PRELOAD", "true").lower() == "true"
+S2E_MODEL_PATH = os.getenv("S2E_MODEL_PATH", "")
 
 resolver = CorefResolver(model_name=MODEL, device=DEVICE, resolve_mode=RESOLVE_MODE)
 
@@ -54,6 +56,10 @@ def health():
         "device": DEVICE,
         "resolve_mode": RESOLVE_MODE,
         "model_loaded": resolver.ready,
+        "cascade": resolver.cascade,
+        # In cascade mode, whether the s2e second stage actually loaded. False
+        # means S2E_MODEL_PATH is unset/invalid and the service runs LingMess-only.
+        "s2e_active": resolver._s2e is not None,
     }
 
 
