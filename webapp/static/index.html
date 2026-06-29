@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bio-Semantic-Parser · Pipeline Viewer</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🧬</span>
+      <div>
+        <h1>Pipeline Viewer</h1>
+        <p class="sub">bio-semantic-parser · ingestion pipeline</p>
+      </div>
+    </div>
+    <div class="status" id="coref-status" title="Coreference service status">
+      <span class="dot" id="coref-dot"></span>
+      <span id="coref-label">checking…</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel input-panel">
+      <div class="tabs">
+        <button class="tab active" data-mode="text">Paste text</button>
+        <button class="tab" data-mode="url">Fetch URL</button>
+      </div>
+
+      <div class="tab-body" id="tab-text">
+        <label for="text">Document text</label>
+        <textarea id="text" rows="9" placeholder="Paste a biomedical abstract or paragraph…">Rapamycin was administered daily to the cohort. It reduced mTOR signalling within two weeks. The drug also improved autophagy markers in aged tissue.</textarea>
+      </div>
+
+      <div class="tab-body hidden" id="tab-url">
+        <label for="url">Document URL</label>
+        <input id="url" type="text" placeholder="https://… (JSON / XML / HTML / PDF)" />
+        <label for="text_field">Text field <span class="muted">(optional, for JSON/XML)</span></label>
+        <input id="text_field" type="text" placeholder="e.g. abstract / AbstractText" />
+      </div>
+
+      <div class="controls">
+        <label class="select-wrap">
+          Source tag
+          <select id="source_name"><option value="manual">manual</option></select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="use_coref" checked />
+          Resolve coreferences
+        </label>
+        <button id="run" class="run-btn">▶ Run pipeline</button>
+      </div>
+      <p class="hint" id="hint"></p>
+    </section>
+
+    <section class="panel result-panel">
+      <div class="result-header">
+        <h2>Pipeline steps</h2>
+        <span class="meta" id="run-meta"></span>
+      </div>
+      <div id="steps" class="steps">
+        <p class="placeholder">Run the pipeline to see each step's output.</p>
+      </div>
+
+      <div id="chunks-wrap" class="chunks-wrap hidden">
+        <h2>Output chunks <span class="meta" id="chunk-count"></span></h2>
+        <div id="chunks" class="chunks"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

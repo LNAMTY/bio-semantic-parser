@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .venv/
+.venv-webapp/
 venv/
 data/processed_ids.db
 *.egg-info/

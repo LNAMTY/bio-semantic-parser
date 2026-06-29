@@ -1,0 +1,10 @@
+# Web pipeline viewer — runtime deps.
+# (The pipeline components it drives also need the project's own src/ deps:
+#  pyyaml, requests, python-dotenv, tiktoken — installed at the repo root.)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0
+requests>=2.28
+pyyaml>=6.0
+python-dotenv>=1.0
+tiktoken>=0.5
