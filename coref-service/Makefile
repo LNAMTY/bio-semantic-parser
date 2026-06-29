@@ -10,13 +10,12 @@ help: ## Show this help
 build: ## Build the Docker image
 	$(COMPOSE) build
 
-up: ## Start the service (LingMess, default) on :5000
+up: ## Start the service (cascade by default) on :5000
 	$(COMPOSE) up -d --build
-	@echo "→ http://localhost:5000  (docs at /docs)"
+	@echo "→ http://localhost:5000  (docs at /docs). First cascade boot downloads the s2e checkpoint."
 
-cascade: download-s2e ## Start the LingMess → s2e cascade on :5000
-	COREF_MODEL=cascade S2E_MODEL_PATH=/models/s2e $(COMPOSE) up -d --build
-	@echo "→ cascade up. Verify with: make health  (expect s2e_active=true)"
+lingmess: ## Start the lighter LingMess-only service (skips the s2e download)
+	COREF_MODEL=lingmess $(COMPOSE) up -d --build
 
 down: ## Stop and remove the container
 	$(COMPOSE) down

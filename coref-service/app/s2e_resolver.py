@@ -69,7 +69,12 @@ class S2EResolver:
         from .s2e.modeling import S2E
 
         logger.info("Loading s2e-coref from %s on %s", self.model_path, self.device)
-        config = LongformerConfig.from_pretrained(self.model_path)
+        # The released checkpoint may omit config.json (s2e loads it from the base
+        # Longformer); fall back to the tokenizer/base model in that case.
+        config_src = self.model_path
+        if not os.path.isfile(os.path.join(self.model_path, "config.json")):
+            config_src = self.tokenizer_name
+        config = LongformerConfig.from_pretrained(config_src)
         # Longformer has no SDPA path; newer transformers (>=4.36) require asking
         # for "eager" explicitly. Harmless no-op on the pinned transformers 4.30.2.
         config._attn_implementation = "eager"

@@ -14,7 +14,7 @@ URL="https://www.dropbox.com/sh/7hpw662xylbmi5o/AAC3nfP4xdGAkf0UkFGzAbrja?dl=1"
 
 mkdir -p "$DEST"
 
-if [ -f "$DEST/pytorch_model.bin" ] && [ -f "$DEST/config.json" ]; then
+if [ -f "$DEST/pytorch_model.bin" ]; then
   echo "✓ s2e checkpoint already present in $DEST — nothing to do."
   exit 0
 fi
@@ -35,10 +35,10 @@ if [ ! -f "$DEST/pytorch_model.bin" ]; then
   fi
 fi
 
-if [ -f "$DEST/pytorch_model.bin" ] && [ -f "$DEST/config.json" ]; then
+if [ -f "$DEST/pytorch_model.bin" ]; then
   echo "✓ Done. Checkpoint ready in $DEST"
 else
-  echo "✗ Expected pytorch_model.bin + config.json in $DEST but they are missing." >&2
+  echo "✗ Expected pytorch_model.bin in $DEST but it is missing." >&2
   echo "  Check the download URL or unzip output." >&2
   exit 1
 fi

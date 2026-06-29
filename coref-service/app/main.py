@@ -18,7 +18,7 @@ from app.resolver import CorefResolver
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("coref-service")
 
-MODEL = os.getenv("COREF_MODEL", "lingmess")  # lingmess | fcoref | cascade
+MODEL = os.getenv("COREF_MODEL", "cascade")  # cascade | lingmess | fcoref
 DEVICE = os.getenv("COREF_DEVICE", "cpu")
 RESOLVE_MODE = os.getenv("COREF_RESOLVE_MODE", "anaphora")
 PRELOAD = os.getenv("COREF_PRELOAD", "true").lower() == "true"

@@ -6,19 +6,21 @@ services:
     container_name: coref-service
     ports:
       - "5000:5000"
-    # Values come from your shell or a local .env file (see .env.example).
-    # Default = LingMess. For the cascade, set COREF_MODEL=cascade and run
-    # `make download-s2e` (or `make cascade`) — no edits to this file needed.
+    # Default = cascade (LingMess → s2e). On first start the s2e checkpoint is
+    # downloaded into the coref-models volume; later starts reuse it. Override any
+    # value here, in your shell, or in a .env file (see .env.example).
     environment:
-      COREF_MODEL: ${COREF_MODEL:-lingmess}        # lingmess | fcoref | cascade
+      COREF_MODEL: ${COREF_MODEL:-cascade}         # cascade | lingmess | fcoref
       COREF_DEVICE: ${COREF_DEVICE:-cpu}           # cpu or cuda:0
       COREF_RESOLVE_MODE: ${COREF_RESOLVE_MODE:-anaphora}
       COREF_PRELOAD: "true"
       HF_HUB_DISABLE_XET: "1"
-      S2E_MODEL_PATH: ${S2E_MODEL_PATH:-}          # set to /models/s2e for cascade
+      S2E_MODEL_PATH: ${S2E_MODEL_PATH:-/models/s2e}
+      S2E_AUTO_DOWNLOAD: ${S2E_AUTO_DOWNLOAD:-true} # set false to skip the auto-download
     volumes:
-      - coref-models:/models        # cached model weights
-      - ./s2e-model:/models/s2e:ro  # s2e checkpoint (empty & ignored unless cascade)
+      - coref-models:/models   # cached weights + the s2e checkpoint (/models/s2e)
+      # To supply your own s2e checkpoint instead of auto-downloading, mount it:
+      # - ./s2e-model:/models/s2e:ro
 
 volumes:
   coref-models:
