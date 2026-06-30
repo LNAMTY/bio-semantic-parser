@@ -1,14 +1,10 @@
 services:
   coref-service:
-    # Pull the prebuilt image, or build locally with `docker compose build`.
     image: ghcr.io/lnamty/coref-service:lingmess
     build: .
     container_name: coref-service
     ports:
       - "5000:5000"
-    # Default = cascade (LingMess → s2e). On first start the s2e checkpoint is
-    # downloaded into the coref-models volume; later starts reuse it. Override any
-    # value here, in your shell, or in a .env file (see .env.example).
     environment:
       COREF_MODEL: ${COREF_MODEL:-cascade}         # cascade | lingmess | fcoref
       COREF_DEVICE: ${COREF_DEVICE:-cpu}           # cpu or cuda:0
@@ -16,10 +12,10 @@ services:
       COREF_PRELOAD: "true"
       HF_HUB_DISABLE_XET: "1"
       S2E_MODEL_PATH: ${S2E_MODEL_PATH:-/models/s2e}
-      S2E_AUTO_DOWNLOAD: ${S2E_AUTO_DOWNLOAD:-true} # set false to skip the auto-download
+      S2E_AUTO_DOWNLOAD: ${S2E_AUTO_DOWNLOAD:-true}
     volumes:
-      - coref-models:/models   # cached weights + the s2e checkpoint (/models/s2e)
-      # To supply your own s2e checkpoint instead of auto-downloading, mount it:
+      - coref-models:/models
+      # Optional: mount your own s2e checkpoint instead of auto-downloading:
       # - ./s2e-model:/models/s2e:ro
 
 volumes:

@@ -49,8 +49,7 @@ class S2EResolver:
 
     @property
     def configured(self) -> bool:
-        # Check the file, not just the dir, so an empty mounted volume falls back
-        # to LingMess-only cleanly instead of failing on load.
+        # Check the file, not the dir, so an empty mounted volume falls back cleanly.
         return bool(self.model_path) and os.path.isfile(
             os.path.join(self.model_path, "pytorch_model.bin")
         )
@@ -158,7 +157,6 @@ class S2EResolver:
 
         token_clusters, _ = extract_clusters_for_decode(mention_to_antecedent)
 
-        # Map token spans -> character spans via the word index.
         char_clusters = []
         for cluster in token_clusters:
             spans = []

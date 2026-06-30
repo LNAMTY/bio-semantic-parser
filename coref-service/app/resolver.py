@@ -27,7 +27,6 @@ POSSESSIVE_PRONOUNS = {
     "mine", "yours", "hers", "ours", "theirs", "whose",
 }
 
-# Articles that introduce an anaphoric reference, e.g. "the compound", "this gene".
 DEFINITE_LEADERS = ("the ", "this ", "that ", "these ", "those ")
 ARTICLE_LEADERS = DEFINITE_LEADERS + ("a ", "an ")
 
@@ -37,15 +36,11 @@ class CorefResolver:
                  resolve_mode: str = "anaphora"):
         self.model_name = model_name.lower()
         self.device = device
-        # "anaphora": rewrite pronouns and definite/demonstrative noun phrases.
-        # "pronouns_only": rewrite pronouns only.
         self.resolve_mode = resolve_mode.lower()
-        # "cascade": run the LingMess model first, then let s2e-coref resolve the
-        # mentions LingMess missed (see _merge_clusters). Requires S2E_MODEL_PATH.
         self.cascade = self.model_name == "cascade"
         self.primary_name = "lingmess" if self.cascade else self.model_name
-        self._model = None      # primary fastcoref model
-        self._s2e = None        # optional secondary s2e resolver (cascade only)
+        self._model = None
+        self._s2e = None
         self._s2e_warned = False
 
     def load(self):
@@ -58,8 +53,7 @@ class CorefResolver:
                 from fastcoref import LingMessCoref
                 self._model = LingMessCoref(device=self.device)
 
-        # Retry on each call so a checkpoint that arrives later (e.g. a background
-        # download) is picked up without a restart.
+        # Retried each call so a checkpoint that downloads later is picked up without a restart.
         if self.cascade and self._s2e is None:
             from app.s2e_resolver import S2EResolver
             s2e = S2EResolver(device=self.device)
@@ -164,8 +158,7 @@ class CorefResolver:
         return self._is_anaphoric(mention)
 
     def _representative(self, text: str, cluster: List[Tuple[int, int]]) -> Tuple[int, int]:
-        # Prefer a named entity (no article) over a definite noun phrase ("the gene"),
-        # and a noun phrase over a pronoun. Break ties by longer span.
+        # Rank: named entity > definite noun phrase > pronoun; ties broken by longer span.
         def rank(span):
             word = text[span[0]:span[1]].strip().lower()
             return (
@@ -197,8 +190,7 @@ class CorefResolver:
                     new = new[:1].upper() + new[1:]
                 replacements.append((span[0], span[1], new))
 
-        # Apply from the end so earlier offsets stay valid. Skip any replacement
-        # that overlaps one already applied (can happen when merging two models).
+        # Apply back-to-front so offsets stay valid; skip overlaps from merged models.
         replacements.sort(key=lambda r: r[0], reverse=True)
         out = text
         last_start = len(text) + 1
