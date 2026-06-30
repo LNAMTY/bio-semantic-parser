@@ -133,4 +133,3 @@ data/
 
 ---
 
-Built at [Rejuve.Bio](https://rejuve.bio) / [SingularityNET](https://singularitynet.io)
