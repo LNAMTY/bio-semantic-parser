@@ -345,7 +345,7 @@ def extract_batch(chunks: list) -> list:
     Extract relations from a list of annotated chunks in parallel.
 
     Chunks are processed concurrently up to LLM_CHUNK_CONCURRENCY workers
-    (default 4, capped by the global LLM_GLOBAL_CONCURRENCY semaphore).
+    (default 4).
 
     Saves a per-chunk progress file so the batch can resume from cached
     results if the pipeline restarts mid-run.
